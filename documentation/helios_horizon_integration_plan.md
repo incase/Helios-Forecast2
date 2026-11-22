@@ -130,14 +130,17 @@ Integrating physical horizon shading creates a two-stage hybrid prediction engin
 
 ### Phase 1: Horizon Physics Engine & Forward Model Integration
 
-- **Task 1.1: Horizon Profile Data Structure**
-  - Add an internal 24-element list `horizon_profile` (defaulting to all `0.0` degrees) to Helios's panel line storage data structure.
+- **Task 1.1: Horizon Profile Data Structure & Module Location**
+  - Add a dedicated pure physics module `custom_components/helios_forecast/solar/horizon.py` holding `HorizonProfile` (24 sectors of $15^\circ$), circular azimuth interpolation, and `beam_shading_factor(solar_alt, solar_az, horizon_profile, width)`.
+  - Add an internal 24-element list `horizon_profile` (defaulting to all `0.0` degrees) to `PanelOrientation` in `solar/irradiance.py` and `PvLayout` in `solar/power.py`.
   - Backward compatibility: If loading existing saved configuration JSON where `horizon_profile` is missing, initialize it to `[0.0] * 24`.
 
-- **Task 1.2: Transposition Enhancement**
-  - Update Helios's baseline transposition calculation to compute solar elevation $\alpha$ and azimuth $\phi$.
-  - Interpolate obstacle elevation $h(\phi)$ from the 24-sector `horizon_profile`.
-  - Multiply direct beam irradiance $DNI$ by the sigmoid shading factor $S(\alpha, \phi)$ while leaving diffuse skylight $DHI$ intact.
+- **Task 1.2: Transposition Enhancement (`solar/irradiance.py`)**
+  - In `compute_pv_power`, compute solar altitude $\alpha$ and azimuth $\phi$ via `sun_position`.
+  - Compute continuous beam attenuation factor $S(\alpha, \phi) = \text{beam\_shading\_factor}(\alpha, \phi, \text{horizon\_profile}, w)$.
+  - Apply attenuation to direct beam Plane-of-Array irradiance:
+    $$\text{direct\_poa} = \text{ghi\_eff} \cdot \text{direct\_fraction} \cdot R_b \cdot \text{IAM} \cdot S(\alpha, \phi)$$
+  - Keep skylight diffuse ($\text{diffuse\_poa}$) and ground-reflected ($\text{ground\_poa}$) irradiance intact.
   - **Zero Disruption Guarantee**: When $h(\phi) = 0.0^\circ$, $S(\alpha, \phi) = 1.0$, producing mathematically identical output to Helios's current baseline transposition.
 
 ---
@@ -145,16 +148,19 @@ Integrating physical horizon shading creates a two-stage hybrid prediction engin
 ### Phase 2: Asynchronous Horizon Profile Optimizer
 
 - **Task 2.1: Data Preparation & Curtailment Exclusion**
-  - Query historical production ($kWh$) and historical Open-Meteo weather matching the training window.
-  - **Curtailment Filter**: Exclude hours where curtailment entities are active or inverter AC power limits are reached.
+  - Query historical production ($kWh$) and historical Open-Meteo weather matching the training window (rolling 60 days).
+  - **Curtailment Filter**: Exclude hours where curtailment entities are active or inverter AC power limits are reached (reusing `curtailment.py`).
 
-- **Task 2.2: L-BFGS-B Horizon Fitting**
-  - Implement a background optimizer worker using `scipy.optimize.minimize(method='L-BFGS-B')`.
-  - Loss Function: Mean Squared Error (MSE) between actual PV generation and model prediction across uncurtailed daytime hours, plus a light smoothness prior $\lambda_{\text{smooth}} \sum (h_{i+1} - h_i)^2$ and flatness prior $\lambda_{\text{flat}} \sum h_i^2$.
-  - Bounds: $0^\circ \le h_i \le 60^\circ$ for each azimuth sector.
-  - Execute within non-blocking thread pools (`hass.async_add_executor_job`).
+- **Task 2.2: L-BFGS-B Horizon Fitting (`solar/horizon.py` & `coordinator.py`)**
+  - Implement optimizer worker `fit_horizon_profile(production_buckets, weather, layout, ...)` using `scipy.optimize.minimize(method='L-BFGS-B')`.
+  - **Non-Zero Gradient Alive Initialization**: Initialize optimization parameters at $h_i = 15.0^\circ$ and $w = 8.0^\circ$ (matching `pySolarForecast`) so initial predictions sit within the active sun elevation region and numerical gradients $\frac{\partial \text{Loss}}{\partial h_i}$ are non-zero.
+  - **Loss Function with Priors**: Mean Squared Error (MSE) between actual PV generation and model prediction across uncurtailed daytime hours, plus smoothness prior $\lambda_{\text{smooth}} \sum (h_{i+1} - h_i)^2$ ($\lambda_{\text{smooth}} = 3.0$) and flatness prior $\lambda_{\text{flat}} \sum h_i^2$ ($\lambda_{\text{flat}} = 5.0$).
+  - **Flatness Prior Function**: Ensures unshaded azimuth sectors actively converge to $0.0^\circ$ obstacle height.
+  - Bounds: $0^\circ \le h_i \le 60^\circ$ for sector heights, $0.5^\circ \le w \le 20.0^\circ$ for transition width.
+  - Execute fitting within non-blocking thread pools (`hass.async_add_executor_job`).
 
-- **Task 2.3: Parameter Persistence**
+- **Task 2.3: Integration into Coordinator Refresh Sequence**
+  - Sequence in `coordinator.py`: Horizon fitting runs **before** `build_sky_residual_map` and `build_library`, so residual weather errors are learned on top of the physical horizon-shaded baseline.
   - Atomically save updated `horizon_profile` values to Helios's persistent storage (`/config/.storage/helios_forecast...`).
 
 ---

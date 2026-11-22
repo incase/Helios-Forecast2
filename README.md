@@ -2,9 +2,15 @@
 
 <img src="https://raw.githubusercontent.com/ReikanYsora/Helios-Forecast/main/images/helios-forecast-logo.svg" alt="" width="84">
 
-# HELIOS FORECAST
+# HELIOS FORECAST 2
 
 **A solar forecast that learns from your panels.**
+
+*This is a fork of https://github.com/ReikanYsora/Helios-Forecast - and will hopefully die once the additional features are incorporated there.*
+
+This fork differs only in providing detection of the horizon that affects your panels. If you only have rooftop panels with no shadow affecting
+them, there is no need to switch to this fork. Shadows that happen purely because of the orientation of the panel are already accounted for
+in Helios Forecast.
 
 A Home Assistant integration that predicts your PV production, corrects itself
 against what your installation really produces, and publishes the result where
@@ -14,7 +20,7 @@ Home Assistant already knows how to show it.
 
 <sub>Measured **2 055 W**, predicted **2 062 W**. Seven watts apart, on a real installation.</sub>
 
-[**Learn more**](https://helios-ha.org/helios-forecast/) &nbsp;&nbsp; [**Data contract**](CONTRACT.md) &nbsp;&nbsp; [**Changelog**](CHANGELOG.md)
+[**Learn more**](https://helios-ha.org/helios-forecast/)    [**Data contract**](CONTRACT.md)    [**Changelog**](CHANGELOG.md)
 
 [![Release](https://img.shields.io/github/v/release/ReikanYsora/Helios-Forecast?display_name=tag&style=for-the-badge&color=e0a106)](https://github.com/ReikanYsora/Helios-Forecast/releases)
 [![HACS Default](https://img.shields.io/badge/HACS-Default-e0a106.svg?style=for-the-badge)](https://github.com/hacs/default)
@@ -26,7 +32,7 @@ Home Assistant already knows how to show it.
 
 </div>
 
----
+______________________________________________________________________
 
 > ### Update to 2026.9.6 as soon as you can
 >
@@ -54,16 +60,16 @@ coordinates rounded to about a kilometre. Clear the box and it stops.
 The integration itself never needs any of this. It has no key, sends nothing of its own accord and
 computes everything on your machine, whether you take part or not.
 
----
+______________________________________________________________________
 
 ## Install
 
 Helios Forecast is in the **HACS default store**.
 
 1. In **HACS**, search for **Helios Forecast** and install it.
-2. **Restart Home Assistant.**
-3. Go to **Settings** > **Devices and services** > **Add integration**, and search for **Helios Forecast**.
-4. Fill in your first panel line: orientation, peak power, and your PV production sensor.
+1. **Restart Home Assistant.**
+1. Go to **Settings** > **Devices and services** > **Add integration**, and search for **Helios Forecast**.
+1. Fill in your first panel line: orientation, peak power, and your PV production sensor.
 
 > The production sensor must be a **cumulative energy sensor in kWh**, your
 > inverter's or meter's running total, not an instantaneous power sensor in W.
@@ -74,14 +80,13 @@ Helios Forecast is in the **HACS default store**.
 
 <br>
 
-Home Assistant logs `We found a custom integration helios_forecast which has not
-been tested by Home Assistant` at startup. That notice appears for every
+Home Assistant logs `We found a custom integration helios_forecast which has not been tested by Home Assistant` at startup. That notice appears for every
 integration installed outside of core, which means every HACS integration. It is
 informational and does not indicate a problem.
 
 </details>
 
----
+______________________________________________________________________
 
 ## What you get
 
@@ -100,7 +105,7 @@ of its own.
 
 Every entity is listed on the [website](https://helios-ha.org/helios-forecast/).
 
----
+______________________________________________________________________
 
 ## The full forecast, in your automations
 
@@ -160,7 +165,7 @@ With more than one installation, pass `config_entry_id` (from **Settings** >
 {{ state_attr('sensor.helios_forecast_power_now', 'forecast') }}
 ```
 
----
+______________________________________________________________________
 
 ## Predicted battery state of charge
 
@@ -211,7 +216,7 @@ One honest note: home consumption is a **learned average**, so the projection is
 good steer, not a guarantee: read it alongside the reliability figure, and it gets
 better as it sees more of your history.
 
----
+______________________________________________________________________
 
 ## How it learns
 
@@ -265,7 +270,7 @@ integration's own page), naming the value at fault and what to do about it, and 
 clears itself the moment the configuration is corrected. The integration's page
 also offers a diagnostics download for issue reports.
 
----
+______________________________________________________________________
 
 ## Panel lines
 
@@ -284,7 +289,7 @@ shared settings or the lines later. Each line can also override the shared
 inverter cap and GPS coordinates, for a micro-inverter string that saturates on
 its own or a line mounted somewhere other than the entry's home location.
 
----
+______________________________________________________________________
 
 ## Works with the Helios card
 
@@ -298,7 +303,7 @@ scene.
 
 Neither needs the other. Together they are the whole story.
 
----
+______________________________________________________________________
 
 ## Status and documentation
 
@@ -316,7 +321,7 @@ Requires Home Assistant **2025.11.0** or later: the archive writes its own long-
 Found a bug, or is a forecast off? [Open an issue](https://github.com/ReikanYsora/Helios-Forecast/issues).
 Feedback is very welcome, and it is what shapes the roadmap.
 
----
+______________________________________________________________________
 
 ## Support the project
 
@@ -328,7 +333,7 @@ next cycle going.
 <a href="https://www.buymeacoffee.com/reikanysora"><img src="https://img.buymeacoffee.com/button-api/?text=Support this project&emoji=☀️&slug=reikanysora&button_colour=5F7FFF&font_colour=ffffff&font_family=Arial&outline_colour=000000&coffee_colour=FFDD00" alt="Buy me a coffee"></a>
 </div>
 
----
+______________________________________________________________________
 
 ## Special thanks
 
@@ -336,7 +341,7 @@ next cycle going.
 - [Glooob Domo](https://www.youtube.com/watch?v=bTg4mzb9jwA)
 - [Smart-Live](https://youtu.be/zFbppiAmCr0)
 
----
+______________________________________________________________________
 
 ## License
 
